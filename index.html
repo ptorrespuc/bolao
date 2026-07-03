@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bolão da Copa</title>
+<meta name="description" content="Bolão da Copa — palpite nos jogos e dispute o ranking com a galera.">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F6F1E2; --green:#0E4A30; --green2:#12321F; --gold:#F4B942;
+    --text:#1C2B22; --muted:#8A9A8F; --card:#FFFFFF; --line:#EAE1C4;
+    --line2:#D8CFAF; --soft:#EFE9D7; --field:#F6F1E2;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min-height:100vh;}
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--line2);border-radius:8px;}
+  @keyframes popIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+  .arch{font-family:'Archivo',sans-serif;}
+  button{font-family:'Manrope',sans-serif;cursor:pointer;}
+  input{font-family:'Manrope',sans-serif;}
+  .wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+
+  /* top nav */
+  header{width:100%;background:var(--green);position:sticky;top:0;z-index:20;box-shadow:0 2px 12px rgba(0,0,0,.12);}
+  .nav-in{max-width:720px;margin:0 auto;padding:16px 20px 0;display:flex;flex-direction:column;gap:14px;}
+  .nav-top{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .logo{display:flex;align-items:baseline;gap:8px;}
+  .logo .b1{font-family:'Archivo',sans-serif;font-weight:900;font-size:22px;color:var(--gold);letter-spacing:-.5px;}
+  .logo .b2{font-family:'Archivo',sans-serif;font-weight:800;font-size:22px;color:#fff;letter-spacing:-.5px;}
+  .nav-meta{font-size:12px;color:#BFE0CB;font-weight:600;display:flex;align-items:center;gap:12px;}
+  .nav-meta .logout{background:transparent;border:none;color:#BFE0CB;font-size:12px;font-weight:700;text-decoration:underline;padding:0;}
+  .tabs{display:flex;gap:4px;}
+  .tab{flex:1;text-align:center;padding:10px 4px;border-radius:10px 10px 0 0;font-weight:800;font-size:13px;border:none;background:transparent;color:#BFE0CB;}
+  .tab.active{background:var(--bg);color:var(--green);}
+
+  main{width:100%;max-width:720px;padding:20px 16px 64px;display:flex;flex-direction:column;gap:18px;}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;}
+  .badge{font-family:'Archivo',sans-serif;font-weight:800;font-size:11px;border-radius:20px;padding:3px 10px;}
+  .chip{flex:1;text-align:center;padding:8px 4px;border-radius:10px;font-family:'Archivo',sans-serif;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;gap:5px;border:none;}
+  .step{width:28px;height:28px;border-radius:8px;background:var(--field);display:flex;align-items:center;justify-content:center;font-weight:800;border:none;font-size:16px;user-select:none;}
+  .center-msg{min-height:60vh;display:grid;place-items:center;text-align:center;color:var(--muted);padding:24px;}
+
+  /* login / name / gate cards */
+  .gate{max-width:420px;margin:48px auto;padding:0 18px;width:100%;}
+  .gate-card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:28px 24px;display:flex;flex-direction:column;gap:14px;}
+  .gate h2{font-family:'Archivo',sans-serif;font-weight:900;font-size:22px;margin:0;color:var(--green);}
+  .gate p{margin:0;font-size:14px;color:var(--muted);line-height:1.5;}
+  .gate input{width:100%;background:var(--field);border:1px solid var(--line2);border-radius:12px;padding:13px 14px;font-size:15px;color:var(--text);}
+  .gate input:focus{outline:none;border-color:var(--green);}
+  .btn-primary{background:var(--gold);color:var(--green2);border:none;border-radius:12px;padding:14px;font-weight:800;font-size:15px;}
+  .btn-primary:disabled{opacity:.6;}
+  .err{color:#B23A2E;font-size:13px;font-weight:600;}
+  .ok{color:var(--green);font-size:13px;font-weight:600;}
+  .hidden{display:none !important;}
+
+  .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:90;background:var(--green);color:#fff;padding:12px 22px;border-radius:999px;box-shadow:0 12px 30px rgba(0,0,0,.25);font-size:14px;font-weight:600;animation:popIn .18s;}
+</style>
+</head>
+<body>
+  <div id="root" class="wrap">
+    <div class="center-msg">Carregando…</div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js?v=1"></script>
+  <script src="js/app.js?v=1"></script>
+</body>
+</html>

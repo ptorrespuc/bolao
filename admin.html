@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bolão da Copa — Admin</title>
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F6F1E2; --green:#0E4A30; --green2:#12321F; --gold:#F4B942;
+    --text:#1C2B22; --muted:#8A9A8F; --card:#FFFFFF; --line:#EAE1C4;
+    --line2:#D8CFAF; --soft:#EFE9D7; --field:#FBF7EC;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;}
+  .arch{font-family:'Archivo',sans-serif;}
+  button{font-family:'Manrope',sans-serif;cursor:pointer;}
+  input,select{font-family:'Manrope',sans-serif;background:var(--field);border:1px solid var(--line2);border-radius:10px;padding:9px 11px;font-size:14px;color:var(--text);width:100%;}
+  input:focus,select:focus{outline:none;border-color:var(--green);}
+  header{background:var(--green);color:#fff;position:sticky;top:0;z-index:20;box-shadow:0 2px 12px rgba(0,0,0,.12);}
+  .hd{max-width:900px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  .hd .ttl{display:flex;align-items:baseline;gap:8px;}
+  .hd .b1{font-family:'Archivo';font-weight:900;font-size:20px;color:var(--gold);}
+  .hd .b2{font-family:'Archivo';font-weight:800;font-size:20px;}
+  .hd .sub{font-size:11px;color:#BFE0CB;font-weight:700;letter-spacing:.14em;}
+  .logout{background:transparent;border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:8px;padding:7px 12px;font-weight:700;font-size:13px;}
+  .tabs{max-width:900px;margin:0 auto;padding:0 20px;display:flex;gap:4px;}
+  .tab{background:transparent;border:none;color:#BFE0CB;padding:10px 14px;border-radius:9px 9px 0 0;font-weight:800;font-size:14px;}
+  .tab.active{background:var(--bg);color:var(--green);}
+  main{max-width:900px;margin:0 auto;padding:22px 20px 80px;display:flex;flex-direction:column;gap:16px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;}
+  .btn{background:var(--gold);color:var(--green2);border:none;border-radius:10px;padding:11px 16px;font-weight:800;font-size:14px;}
+  .btn-sm{padding:8px 12px;font-size:13px;}
+  .btn-ghost{background:transparent;border:1px solid var(--line2);color:var(--text);}
+  .btn-danger{background:transparent;border:1px solid #E0A9A2;color:#B23A2E;}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .grid{display:grid;gap:10px;}
+  label{font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px;}
+  h3{font-family:'Archivo';font-weight:800;font-size:16px;color:var(--green);margin:0;}
+  .phase-ttl{font-family:'Archivo';font-weight:800;font-size:14px;color:var(--green);margin:6px 0 2px;text-transform:uppercase;letter-spacing:.06em;}
+  .muted{color:var(--muted);font-size:13px;}
+  .hidden{display:none !important;}
+  .gate{max-width:400px;margin:70px auto;padding:0 18px;}
+  .gate .card{display:flex;flex-direction:column;gap:12px;}
+  .err{color:#B23A2E;font-size:13px;font-weight:600;}
+  .ok{color:var(--green);font-size:13px;font-weight:600;}
+  .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:90;background:var(--green);color:#fff;padding:12px 22px;border-radius:999px;box-shadow:0 12px 30px rgba(0,0,0,.25);font-size:14px;font-weight:600;}
+  code{background:var(--soft);padding:2px 6px;border-radius:6px;font-size:13px;}
+  @media(max-width:640px){ .col2{grid-template-columns:1fr !important;} }
+</style>
+</head>
+<body>
+  <div id="login" class="gate hidden">
+    <div class="card">
+      <h3>Admin — Bolão da Copa</h3>
+      <p class="muted" style="margin:0;">Entre com o e-mail cadastrado como administrador. Enviaremos um link mágico.</p>
+      <input id="email" type="email" placeholder="seu@email.com" autocomplete="email">
+      <button id="sendLink" class="btn">Enviar link de acesso</button>
+      <div id="loginMsg"></div>
+    </div>
+  </div>
+
+  <div id="denied" class="gate hidden">
+    <div class="card">
+      <h3>Sem permissão</h3>
+      <p class="muted">Este usuário não é administrador. Peça para adicionar seu <code>user_id</code> na tabela <code>admins</code> (veja o SETUP.md).</p>
+      <button id="denyLogout" class="btn btn-ghost">Sair</button>
+    </div>
+  </div>
+
+  <div id="app" class="hidden">
+    <header>
+      <div class="hd">
+        <div class="ttl"><span class="b1 arch">Bolão</span><span class="b2 arch">da Copa</span><span class="sub">ADMIN</span></div>
+        <button id="logout" class="logout">Sair</button>
+      </div>
+      <div class="tabs">
+        <button class="tab active" data-tab="games">Jogos</button>
+        <button class="tab" data-tab="teams">Times</button>
+        <button class="tab" data-tab="groups">Grupos</button>
+      </div>
+    </header>
+    <main id="main"></main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js?v=1"></script>
+  <script src="js/admin.js?v=1"></script>
+</body>
+</html>
