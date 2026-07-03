@@ -43,8 +43,8 @@ function avatarColor(seed) {
   return AVATAR_PALETTE[Math.abs(h) % AVATAR_PALETTE.length];
 }
 function teamName(code) { return code && state.teams[code] ? state.teams[code].name : 'A definir'; }
-function teamFlag(code) { return code && state.teams[code] ? (state.teams[code].flag || '') : ''; }
-function teamLabel(code) { const f = teamFlag(code); return (f ? f + ' ' : '') + teamName(code); }
+// só o nome do país: a bandeira emoji vira "DE/KR/US…" no Windows (que não a renderiza)
+function teamLabel(code) { return teamName(code); }
 function isLocked(game) { return new Date(game.kickoff).getTime() <= Date.now(); }
 // URL de retorno do magic link SEM fragmento (#...): evita "envenenar" o
 // próximo link com um #error/#access_token antigo que ficou na barra de endereço.
