@@ -38,6 +38,9 @@ function toLocalInput(iso) {
 }
 function fromLocalInput(v) { return v ? new Date(v).toISOString() : null; }
 function teamName(code) { const t = TEAMS.find(x => x.code === code); return t ? t.name : 'A definir'; }
+// URL de retorno do magic link SEM fragmento (#...): evita "envenenar" o
+// próximo link com um #error/#access_token antigo que ficou na barra de endereço.
+function redirectUrl() { return location.origin + location.pathname + location.search; }
 
 // ============================================================
 // AUTH (magic link)
@@ -51,7 +54,11 @@ async function init() {
   sb.auth.onAuthStateChange((_e, session) => { if (session) checkAdmin(session); });
   const { data: { session } } = await sb.auth.getSession();
   if (session) checkAdmin(session);
-  else show($('login'));
+  else {
+    // limpa erro/token antigo do hash para não contaminar o próximo link
+    if (location.hash) history.replaceState(null, '', redirectUrl());
+    show($('login'));
+  }
 }
 
 $('sendLink').onclick = async () => {
@@ -59,7 +66,7 @@ $('sendLink').onclick = async () => {
   const msg = $('loginMsg'); msg.className = ''; msg.textContent = '';
   if (!email.includes('@')) { msg.className = 'err'; msg.textContent = 'Informe um e-mail válido.'; return; }
   $('sendLink').disabled = true; $('sendLink').textContent = 'Enviando…';
-  const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.href } });
+  const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectUrl() } });
   $('sendLink').disabled = false; $('sendLink').textContent = 'Enviar link de acesso';
   if (error) { msg.className = 'err'; msg.textContent = error.message; }
   else { msg.className = 'ok'; msg.textContent = 'Link enviado! Confira seu e-mail.'; }

@@ -46,6 +46,9 @@ function teamName(code) { return code && state.teams[code] ? state.teams[code].n
 function teamFlag(code) { return code && state.teams[code] ? (state.teams[code].flag || '') : ''; }
 function teamLabel(code) { const f = teamFlag(code); return (f ? f + ' ' : '') + teamName(code); }
 function isLocked(game) { return new Date(game.kickoff).getTime() <= Date.now(); }
+// URL de retorno do magic link SEM fragmento (#...): evita "envenenar" o
+// próximo link com um #error/#access_token antigo que ficou na barra de endereço.
+function redirectUrl() { return location.origin + location.pathname + location.search; }
 function gameReady(g) { return !!(g.team_a && g.team_b); }  // os dois times definidos
 
 const WD = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -100,7 +103,11 @@ async function init() {
   sb.auth.onAuthStateChange((_e, session) => { if (session && !state.user) afterLogin(session); });
   const { data: { session } } = await sb.auth.getSession();
   if (session) afterLogin(session);
-  else renderLogin();
+  else {
+    // limpa erro/token antigo do hash para não contaminar o próximo link
+    if (location.hash) history.replaceState(null, '', redirectUrl());
+    renderLogin();
+  }
 }
 
 // ---------- login (magic link) ----------
@@ -121,7 +128,7 @@ function renderLogin() {
     msg.className = ''; msg.textContent = '';
     if (!val || !val.includes('@')) { msg.className = 'err'; msg.textContent = 'Informe um e-mail válido.'; return; }
     btn.disabled = true; btn.textContent = 'Enviando…';
-    const { error } = await sb.auth.signInWithOtp({ email: val, options: { emailRedirectTo: location.href } });
+    const { error } = await sb.auth.signInWithOtp({ email: val, options: { emailRedirectTo: redirectUrl() } });
     btn.disabled = false; btn.textContent = 'Enviar link de acesso';
     if (error) { msg.className = 'err'; msg.textContent = 'Não deu para enviar: ' + error.message; }
     else { msg.className = 'ok'; msg.textContent = 'Link enviado! Confira seu e-mail (e a caixa de spam).'; }
