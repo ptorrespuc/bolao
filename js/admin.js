@@ -218,9 +218,14 @@ function wireGameCard(gid) {
 async function addGame() {
   const maxSort = GAMES.reduce((m, g) => Math.max(m, g.sort || 0), 0);
   const kickoff = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
-  const { error } = await sb.from('games').insert({ phase: 'oitavas', kickoff, sort: maxSort + 1 });
+  const { data, error } = await sb.from('games')
+    .insert({ phase: 'oitavas', kickoff, sort: maxSort + 1 }).select('id').single();
   if (error) return toast(error.message);
   await loadAll(); renderTab(true);
+  toast('Jogo adicionado — preencha os times e salve.');
+  // o card novo entra no fim das oitavas; rola até ele para não parecer que nada aconteceu
+  const card = data && document.querySelector(`[data-gid="${data.id}"]`);
+  if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 async function saveGame(gid) {
