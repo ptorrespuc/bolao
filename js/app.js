@@ -380,15 +380,17 @@ function renderDetail(main) {
         const pts = computePoints(g, bet);
         const locked = isLocked(g);
         let right, sub;
+        // no empate, mostra quem o apostador escolheu para avançar
+        const advSuffix = bet && bet.score_a === bet.score_b ? ` (avança ${esc(teamName(bet.advances))})` : '';
         if (g.played) {
           const [bg, fg] = badgeColors[pts != null ? pts : 0];
           right = `<div class="badge" style="background:${bg};color:${fg};">${pts != null ? '+' + pts + ' pts' : '—'}</div>`;
-          sub = bet ? `Palpite: ${bet.score_a}-${bet.score_b}${bet.score_a === bet.score_b ? ` (avança ${esc(teamName(bet.advances))})` : ''}` : 'Não apostou';
+          sub = bet ? `Palpite: ${bet.score_a}-${bet.score_b}${advSuffix}` : 'Não apostou';
         } else {
           const placed = !!bet;
           right = `<div class="badge" style="background:${placed ? '#DCEFE1' : '#F3E3D0'};color:${placed ? 'var(--green)' : '#A0662E'};">${placed ? (locked ? 'Aguardando' : 'Palpite feito') : 'Pendente'}</div>`;
           // só mostra o palpite do próprio usuário enquanto o jogo não começou
-          sub = placed ? ((isMe || locked) ? `Palpite: ${bet.score_a}-${bet.score_b}` : 'Palpite registrado') : 'Sem palpite';
+          sub = placed ? ((isMe || locked) ? `Palpite: ${bet.score_a}-${bet.score_b}${advSuffix}` : 'Palpite registrado') : 'Sem palpite';
         }
         const res = g.played ? `${g.score_a} - ${g.score_b}` : 'vs';
         return `<div class="card" style="padding:14px 16px;display:flex;flex-direction:column;gap:8px;">
