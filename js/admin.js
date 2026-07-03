@@ -2,7 +2,9 @@
 // Bolão da Copa — Admin
 // ============================================================
 const { SUPABASE_URL, SUPABASE_KEY } = window.BOLAO_CONFIG;
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { flowType: 'implicit', detectSessionInUrl: true, persistSession: true, autoRefreshToken: true },
+});
 
 const $ = (id) => document.getElementById(id);
 const show = (el) => el.classList.remove('hidden');

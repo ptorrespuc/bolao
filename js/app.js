@@ -2,7 +2,11 @@
 // Bolão da Copa — App do apostador
 // ============================================================
 const { SUPABASE_URL, SUPABASE_KEY } = window.BOLAO_CONFIG;
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// flowType 'implicit': o token vem na URL do link mágico, então funciona mesmo
+// quando a pessoa abre o e-mail em outro navegador/celular (sem depender do PKCE).
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { flowType: 'implicit', detectSessionInUrl: true, persistSession: true, autoRefreshToken: true },
+});
 
 const root = document.getElementById('root');
 
