@@ -92,11 +92,12 @@ async function loadAll() {
   TEAMS = t.data || []; GAMES = g.data || []; GROUPS = gr.data || []; PARTICIPANTS = pa.data || [];
 }
 
-function renderTab() {
+function renderTab(keepScroll = false) {
+  const y = keepScroll ? window.scrollY : 0;
   if (tab === 'games') renderGames();
   else if (tab === 'teams') renderTeams();
   else renderGroups();
-  window.scrollTo(0, 0);
+  window.scrollTo(0, y);
 }
 
 // ============================================================
@@ -192,7 +193,7 @@ async function addGame() {
   const kickoff = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
   const { error } = await sb.from('games').insert({ phase: 'oitavas', kickoff, sort: maxSort + 1 });
   if (error) return toast(error.message);
-  await loadAll(); renderTab();
+  await loadAll(); renderTab(true);
 }
 
 async function saveGame(gid) {
@@ -207,14 +208,14 @@ async function saveGame(gid) {
   const patch = { ...form, sort: g.sort };
   const { error } = await sb.from('games').update(patch).eq('id', gid);
   if (error) return toast(error.message);
-  await loadAll(); renderTab(); toast('Jogo salvo!');
+  await loadAll(); renderTab(true); toast('Jogo salvo!');
 }
 
 async function delGame(gid) {
   if (!confirm('Excluir este jogo? Os palpites dele também serão apagados.')) return;
   const { error } = await sb.from('games').delete().eq('id', gid);
   if (error) return toast(error.message);
-  await loadAll(); renderTab(); toast('Jogo excluído.');
+  await loadAll(); renderTab(true); toast('Jogo excluído.');
 }
 
 // ============================================================
@@ -250,13 +251,13 @@ async function addTeam() {
   if (!code || !name) return toast('Preencha código e nome.');
   const { error } = await sb.from('teams').insert({ code, name, flag });
   if (error) return toast(error.message);
-  await loadAll(); renderTab(); toast('Time adicionado.');
+  await loadAll(); renderTab(true); toast('Time adicionado.');
 }
 async function delTeam(code) {
   if (!confirm(`Excluir o time ${code}?`)) return;
   const { error } = await sb.from('teams').delete().eq('code', code);
   if (error) return toast('Não deu (talvez haja jogos usando este time): ' + error.message);
-  await loadAll(); renderTab();
+  await loadAll(); renderTab(true);
 }
 
 // ============================================================
@@ -346,14 +347,14 @@ async function addParticipant(gid, name, email) {
   if (!name || !email.includes('@')) return toast('Informe nome e e-mail válido.');
   const { error } = await sb.from('participants').insert({ group_id: gid, display_name: name, email });
   if (error) return toast(error.code === '23505' ? 'Este e-mail já está neste grupo.' : error.message);
-  await loadAll(); renderTab(); toast('Jogador cadastrado!');
+  await loadAll(); renderTab(true); toast('Jogador cadastrado!');
 }
 
 async function delParticipant(id) {
   if (!confirm('Remover este jogador do grupo? Os palpites dele também serão apagados.')) return;
   const { error } = await sb.from('participants').delete().eq('id', id);
   if (error) return toast(error.message);
-  await loadAll(); renderTab(); toast('Jogador removido.');
+  await loadAll(); renderTab(true); toast('Jogador removido.');
 }
 
 async function addGroup() {
@@ -362,13 +363,13 @@ async function addGroup() {
   if (!name || !code) return toast('Preencha nome e código.');
   const { error } = await sb.from('groups').insert({ name, code });
   if (error) return toast(error.code === '23505' ? 'Já existe um grupo com esse código.' : error.message);
-  await loadAll(); renderTab(); toast('Grupo criado!');
+  await loadAll(); renderTab(true); toast('Grupo criado!');
 }
 async function delGroup(id) {
   if (!confirm('Excluir este grupo? Participantes e palpites dele serão apagados.')) return;
   const { error } = await sb.from('groups').delete().eq('id', id);
   if (error) return toast(error.message);
-  await loadAll(); renderTab();
+  await loadAll(); renderTab(true);
 }
 
 init();

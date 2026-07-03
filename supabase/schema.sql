@@ -237,9 +237,16 @@ end; $$;
 grant execute on function claim_participant(uuid) to authenticated;
 
 -- ---------- bets: lê palpites do(s) seu(s) grupo(s); insere/edita os próprios ANTES do kickoff ----------
+-- Os MEUS palpites sempre; os dos colegas de grupo só depois do kickoff
+-- (evita espiar palpites alheios pela API antes do jogo).
 drop policy if exists "read bets of my groups" on bets;
 create policy "read bets of my groups" on bets for select
-  using (participant_id in (select id from participants) or is_admin());
+  using (
+    is_admin()
+    or participant_id in (select id from participants where user_id = auth.uid())
+    or (participant_id in (select id from participants)   -- RLS já limita ao meu grupo
+        and exists (select 1 from games g where g.id = bets.game_id and g.kickoff <= now()))
+  );
 
 drop policy if exists "insert own bet before kickoff" on bets;
 create policy "insert own bet before kickoff" on bets for insert

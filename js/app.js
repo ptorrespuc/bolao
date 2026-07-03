@@ -135,7 +135,8 @@ async function afterLogin(session) {
   // vincula este login ao cadastro feito pelo admin (casa pelo e-mail)
   const { data: part, error } = await sb.rpc('claim_participant', { p_group: state.group.id });
   if (error) return renderNotRegistered('Não deu para entrar: ' + error.message);
-  if (!part) return renderNotRegistered();
+  // e-mail não cadastrado: o RPC pode devolver null OU uma linha toda nula
+  if (!part || !part.id) return renderNotRegistered();
   state.participant = { id: part.id, display_name: part.display_name };
   await loadAll(); render();
 }
@@ -282,7 +283,7 @@ function renderRanking(main) {
   const rest = ranked.slice(3).map(p => {
     const you = p.participant_id === state.participant.id;
     return `<div data-part="${p.participant_id}" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-top:1px solid #F1EBD6;cursor:pointer;background:${you ? '#FBF4DF' : 'transparent'};">
-      <div style="width:26px;" class="arch" style="font-weight:800;font-size:14px;color:#8A9A8F;">${p.rank}</div>
+      <div class="arch" style="width:26px;font-weight:800;font-size:14px;color:#8A9A8F;">${p.rank}</div>
       <div style="width:38px;height:38px;border-radius:50%;flex-shrink:0;background:${avatarColor(p.participant_id)};color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Archivo';font-weight:800;font-size:13px;">${esc(initials(p.display_name))}</div>
       <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
         <span style="font-weight:700;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(p.display_name)}</span>
@@ -503,22 +504,39 @@ function wireBetCards(main) {
   });
 }
 
+function betRow(gameId, e) {
+  return {
+    participant_id: state.participant.id, game_id: gameId,
+    score_a: e.score_a, score_b: e.score_b,
+    advances: e.score_a === e.score_b ? e.advances : null,
+  };
+}
+
 async function saveBet(gameId) {
   const g = state.games.find(x => x.id === gameId);
   const e = editState(g);
   if (e.score_a === e.score_b && !e.advances) { toast('No empate, escolha quem avança.'); return; }
   e.saving = true; render();
-  const row = {
-    participant_id: state.participant.id, game_id: gameId,
-    score_a: e.score_a, score_b: e.score_b,
-    advances: e.score_a === e.score_b ? e.advances : null,
-  };
-  const { data, error } = await sb.from('bets')
-    .upsert(row, { onConflict: 'participant_id,game_id' }).select('*').single();
+  let { data, error } = await sb.from('bets')
+    .upsert(betRow(gameId, e), { onConflict: 'participant_id,game_id' }).select('*').single();
+
+  // RLS recusou (42501): o cadastro pode ter mudado (ex.: admin removeu e
+  // re-adicionou o jogador) — revincula o participante e tenta uma vez de novo.
+  if (error && error.code === '42501') {
+    const { data: part } = await sb.rpc('claim_participant', { p_group: state.group.id });
+    if (part && part.id && part.id !== state.participant.id) {
+      state.participant = { id: part.id, display_name: part.display_name };
+      ({ data, error } = await sb.from('bets')
+        .upsert(betRow(gameId, e), { onConflict: 'participant_id,game_id' }).select('*').single());
+    }
+  }
+
   e.saving = false;
   if (error) {
-    // trava de kickoff no banco (ou jogo já começou)
-    if (isLocked(g)) { toast('Este jogo já começou — apostas encerradas.'); await loadAll(); }
+    await loadAll();  // dados frescos (kickoff pode ter mudado no servidor)
+    const fresh = state.games.find(x => x.id === gameId);
+    if (fresh && isLocked(fresh)) toast('Este jogo já começou — apostas encerradas.');
+    else if (error.code === '42501') toast('O banco recusou o palpite. Recarregue a página e tente de novo.');
     else toast('Não deu para salvar: ' + error.message);
     render(); return;
   }
