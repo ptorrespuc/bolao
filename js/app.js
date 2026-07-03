@@ -114,7 +114,7 @@ async function init() {
 function renderLogin(prefillEmail) {
   renderGate(`
     <h2>${esc(state.group.name)}</h2>
-    <p>Entre com seu e-mail. Enviaremos um <b>código de 6 dígitos</b> (e também um link) — use o que preferir.</p>
+    <p>Entre com seu e-mail. Enviaremos um <b>código de acesso</b> (e também um link) — use o que preferir.</p>
     <input id="email" type="email" placeholder="seu@email.com" autocomplete="email" value="${esc(prefillEmail || '')}">
     <button id="sendLink" class="btn-primary">Enviar código de acesso</button>
     <div id="loginMsg"></div>
@@ -140,9 +140,9 @@ function renderLogin(prefillEmail) {
 function renderCodeStep(loginEmail) {
   renderGate(`
     <h2>${esc(state.group.name)}</h2>
-    <p>Enviamos um código para <b>${esc(loginEmail)}</b>. Digite os <b>6 dígitos</b> abaixo (ou clique no link do e-mail).</p>
-    <input id="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6"
-           placeholder="000000" style="letter-spacing:8px;text-align:center;font-size:22px;font-weight:800;">
+    <p>Enviamos um código para <b>${esc(loginEmail)}</b>. Digite o <b>código</b> abaixo (ou clique no link do e-mail).</p>
+    <input id="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="10"
+           placeholder="código" style="letter-spacing:6px;text-align:center;font-size:22px;font-weight:800;">
     <button id="verify" class="btn-primary">Entrar</button>
     <div id="loginMsg"></div>
     <button id="backToEmail" style="margin-top:8px;background:none;border:none;color:var(--green);font-weight:700;font-size:13px;cursor:pointer;">Reenviar / usar outro e-mail</button>
@@ -154,7 +154,7 @@ function renderCodeStep(loginEmail) {
   const verify = async () => {
     const token = code.value.trim();
     msg.className = ''; msg.textContent = '';
-    if (!/^\d{6}$/.test(token)) { msg.className = 'err'; msg.textContent = 'Digite os 6 dígitos do código.'; return; }
+    if (!/^\d{6,10}$/.test(token)) { msg.className = 'err'; msg.textContent = 'Digite o código que chegou no e-mail (só números).'; return; }
     btn.disabled = true; btn.textContent = 'Verificando…';
     const { error } = await sb.auth.verifyOtp({ email: loginEmail, token, type: 'email' });
     btn.disabled = false; btn.textContent = 'Entrar';

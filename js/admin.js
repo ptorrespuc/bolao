@@ -80,7 +80,7 @@ $('verifyCode').onclick = async () => {
   const token = $('code').value.trim();
   const email = $('codeEmail').textContent;
   const msg = $('loginMsg'); msg.className = ''; msg.textContent = '';
-  if (!/^\d{6}$/.test(token)) { msg.className = 'err'; msg.textContent = 'Digite os 6 dígitos do código.'; return; }
+  if (!/^\d{6,10}$/.test(token)) { msg.className = 'err'; msg.textContent = 'Digite o código que chegou no e-mail (só números).'; return; }
   $('verifyCode').disabled = true; $('verifyCode').textContent = 'Verificando…';
   const { error } = await sb.auth.verifyOtp({ email, token, type: 'email' });
   $('verifyCode').disabled = false; $('verifyCode').textContent = 'Entrar';
