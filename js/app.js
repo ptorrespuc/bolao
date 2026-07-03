@@ -42,6 +42,7 @@ function teamName(code) { return code && state.teams[code] ? state.teams[code].n
 function teamFlag(code) { return code && state.teams[code] ? (state.teams[code].flag || '') : ''; }
 function teamLabel(code) { const f = teamFlag(code); return (f ? f + ' ' : '') + teamName(code); }
 function isLocked(game) { return new Date(game.kickoff).getTime() <= Date.now(); }
+function gameReady(g) { return !!(g.team_a && g.team_b); }  // os dois times definidos
 
 const WD = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 function kickoffLabel(iso) {
@@ -174,7 +175,7 @@ async function loadAll() {
 
   // fase inicial de aposta = primeira fase com jogo em aberto
   const openPhase = PHASE_ORDER.find(ph =>
-    state.games.some(g => g.phase === ph && !isLocked(g)));
+    state.games.some(g => g.phase === ph && gameReady(g) && !isLocked(g)));
   if (openPhase) state.betPhase = openPhase;
 }
 
@@ -186,6 +187,7 @@ function myBet(gameId) {
 // ============================================================
 // RENDER — shell + navegação
 // ============================================================
+let lastNavKey = null;  // sobe ao topo só quando muda de aba/fase/pessoa
 function render() {
   root.className = 'wrap';
   root.innerHTML = `
@@ -219,13 +221,14 @@ function render() {
   if (state.view === 'ranking') renderRanking(main);
   else if (state.view === 'detail') renderDetail(main);
   else if (state.view === 'bet') renderBet(main);
-  window.scrollTo(0, 0);
+  // só rola pro topo quando navega (troca aba/fase/pessoa), não a cada +/-
+  const navKey = state.view + '|' + state.selectedPartId + '|' + state.betPhase;
+  if (navKey !== lastNavKey) { window.scrollTo(0, 0); lastNavKey = navKey; }
 }
 
 function phaseStepperHTML() {
   return `<div style="display:flex;gap:8px;">` + PHASE_ORDER.map(ph => {
-    const hasOpen = state.games.some(g => g.phase === ph && !isLocked(g));
-    const hasAny = state.games.some(g => g.phase === ph && g.team_a);
+    const hasAny = state.games.some(g => g.phase === ph && gameReady(g));
     const locked = !hasAny;
     return `<div class="chip" style="background:${locked ? 'var(--soft)' : 'var(--green)'};color:${locked ? '#A79E82' : 'var(--bg)'};">
       <span>${PHASE_LABELS[ph]}</span>${locked ? lockSvg('currentColor') : ''}</div>`;
@@ -323,9 +326,10 @@ function renderDetail(main) {
   const badgeColors = { 10: ['#F4B942', '#4A3A0A'], 7: ['#2E7D46', '#fff'], 5: ['#D98C2B', '#fff'], 0: ['#E4DEC7', '#8A8365'] };
 
   const phasesHTML = PHASE_ORDER.map(ph => {
-    const games = state.games.filter(g => g.phase === ph);
-    if (!games.length) return '';
-    const undefinedPhase = games.every(g => !g.team_a);
+    const anyInPhase = state.games.some(g => g.phase === ph);
+    if (!anyInPhase) return '';
+    const games = state.games.filter(g => g.phase === ph && gameReady(g));
+    const undefinedPhase = games.length === 0;
     let body;
     if (undefinedPhase) {
       body = `<div style="background:var(--soft);border:1px dashed var(--line2);border-radius:14px;padding:16px;font-size:13px;font-weight:600;color:#9A9179;text-align:center;">Chave ainda não definida</div>`;
@@ -372,7 +376,7 @@ function renderDetail(main) {
 // ============================================================
 function renderBet(main) {
   const tabs = `<div style="display:flex;gap:8px;">` + PHASE_ORDER.map(ph => {
-    const hasAny = state.games.some(g => g.phase === ph && g.team_a);
+    const hasAny = state.games.some(g => g.phase === ph && gameReady(g));
     const active = state.betPhase === ph;
     return `<button class="chip" data-phase="${ph}" ${hasAny ? '' : 'disabled'} style="
       background:${active ? 'var(--gold)' : (hasAny ? 'rgba(14,74,48,.12)' : 'var(--soft)')};
@@ -381,9 +385,9 @@ function renderBet(main) {
       <span>${PHASE_LABELS[ph]}</span>${hasAny ? '' : lockSvg('currentColor')}</button>`;
   }).join('') + `</div>`;
 
-  const games = state.games.filter(g => g.phase === state.betPhase);
+  const games = state.games.filter(g => g.phase === state.betPhase && gameReady(g));
   let body;
-  if (!games.length || games.every(g => !g.team_a)) {
+  if (!games.length) {
     body = `<div style="background:var(--soft);border:1px dashed var(--line2);border-radius:16px;padding:28px 16px;text-align:center;font-size:14px;font-weight:600;color:#9A9179;display:flex;flex-direction:column;gap:8px;align-items:center;">
       ${lockSvg('#9A9179')} As apostas desta fase abrem quando a chave estiver definida.</div>`;
   } else {
