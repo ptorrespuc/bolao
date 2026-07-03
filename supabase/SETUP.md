@@ -25,6 +25,10 @@ Siga na ordem. Leva ~10 minutos.
    > O magic link volta para a mesma URL de onde foi pedido (incluindo o `?g=...`); o `**` garante que qualquer caminho/parâmetro desse endereço seja aceito.
 3. (Recomendado) Em **Authentication → Emails**, o Supabase já envia os links pelo servidor de testes dele. Para produção com muitos usuários, configure um SMTP próprio depois.
 
+> **Login por código de 6 dígitos (recomendado).** O app aceita tanto o **link** quanto um **código de 6 dígitos** — o código é imune a e-mails que "pré-visitam" o link (temp mail, antivírus, Outlook Safe Links), que gastam o link antes de você clicar. Para o código aparecer no e-mail:
+> - **Se você usa o e-mail padrão do Supabase:** em **Authentication → Emails → Magic Link**, inclua o token no template, ex.: `<p>Ou use este código: <b>{{ .Token }}</b></p>`.
+> - **Se você usa a Edge Function do Resend** (veja `SETUP-EMAIL.md`): o código já vai no e-mail; basta **reimplantar** a função (`npx supabase functions deploy send-email --no-verify-jwt`).
+
 ## 4. Criar seu usuário de admin
 1. **Authentication** → **Users** → **Add user** → **Create new user** → informe seu e-mail e uma senha qualquer → marque **Auto Confirm User** → **Create**.
    (Você vai entrar pelo magic link; a senha só serve para criar o usuário agora.)

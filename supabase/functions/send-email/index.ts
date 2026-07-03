@@ -14,7 +14,7 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 // o secret do painel vem como "v1,whsec_xxx" — a lib espera só a parte base64
 const wh = new Webhook(HOOK_SECRET.replace(/^v1,whsec_/, ''));
 
-function emailHtml(link: string) {
+function emailHtml(link: string, code: string) {
   return `<!DOCTYPE html><html><body style="margin:0;background:#F6F1E2;font-family:Arial,Helvetica,sans-serif;color:#1C2B22;">
     <div style="max-width:480px;margin:0 auto;padding:32px 20px;">
       <div style="text-align:center;margin-bottom:24px;">
@@ -22,9 +22,13 @@ function emailHtml(link: string) {
       </div>
       <div style="background:#FFFFFF;border:1px solid #EAE1C4;border-radius:16px;padding:28px 24px;">
         <h1 style="font-size:20px;margin:0 0 12px;color:#0E4A30;">Seu acesso ao bolão</h1>
-        <p style="font-size:15px;line-height:1.5;margin:0 0 22px;color:#3a463f;">
-          Clique no botão abaixo para entrar. O link é pessoal e vale por pouco tempo.
+        <p style="font-size:15px;line-height:1.5;margin:0 0 18px;color:#3a463f;">
+          Use o <b>código</b> abaixo na tela de login (ou clique no botão). Vale por pouco tempo.
         </p>
+        ${code ? `<div style="text-align:center;margin:0 0 22px;">
+          <div style="font-size:13px;color:#8A9A8F;font-weight:700;margin-bottom:6px;">SEU CÓDIGO</div>
+          <div style="display:inline-block;background:#FBF7EC;border:1px solid #D8CFAF;border-radius:12px;padding:14px 24px;font-size:30px;font-weight:900;letter-spacing:8px;color:#0E4A30;">${code}</div>
+        </div>` : ''}
         <div style="text-align:center;margin:0 0 22px;">
           <a href="${link}" style="display:inline-block;background:#F4B942;color:#12321F;text-decoration:none;font-weight:800;padding:14px 26px;border-radius:10px;font-size:15px;">Entrar no bolão</a>
         </div>
@@ -53,7 +57,7 @@ Deno.serve(async (req) => {
   }
 
   const { user, email_data } = data;
-  const { token_hash, redirect_to, email_action_type } = email_data;
+  const { token, token_hash, redirect_to, email_action_type } = email_data;
 
   // monta o link de verificação do Supabase (que redireciona de volta ao app)
   const link = `${SUPABASE_URL}/auth/v1/verify?token=${token_hash}` +
@@ -65,8 +69,8 @@ Deno.serve(async (req) => {
     body: JSON.stringify({
       from: RESEND_FROM,
       to: user.email,
-      subject: 'Seu acesso ao Bolão da Copa',
-      html: emailHtml(link),
+      subject: `Bolão da Copa — seu código: ${token ?? ''}`.trim(),
+      html: emailHtml(link, token ?? ''),
     }),
   });
 

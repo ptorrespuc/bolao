@@ -110,13 +110,13 @@ async function init() {
   }
 }
 
-// ---------- login (magic link) ----------
-function renderLogin() {
+// ---------- login (código de 6 dígitos ou link) ----------
+function renderLogin(prefillEmail) {
   renderGate(`
     <h2>${esc(state.group.name)}</h2>
-    <p>Entre com seu e-mail. Enviaremos um link mágico — clique nele e você já está dentro do bolão.</p>
-    <input id="email" type="email" placeholder="seu@email.com" autocomplete="email">
-    <button id="sendLink" class="btn-primary">Enviar link de acesso</button>
+    <p>Entre com seu e-mail. Enviaremos um <b>código de 6 dígitos</b> (e também um link) — use o que preferir.</p>
+    <input id="email" type="email" placeholder="seu@email.com" autocomplete="email" value="${esc(prefillEmail || '')}">
+    <button id="sendLink" class="btn-primary">Enviar código de acesso</button>
     <div id="loginMsg"></div>
   `);
   const email = document.getElementById('email');
@@ -129,12 +129,41 @@ function renderLogin() {
     if (!val || !val.includes('@')) { msg.className = 'err'; msg.textContent = 'Informe um e-mail válido.'; return; }
     btn.disabled = true; btn.textContent = 'Enviando…';
     const { error } = await sb.auth.signInWithOtp({ email: val, options: { emailRedirectTo: redirectUrl() } });
-    btn.disabled = false; btn.textContent = 'Enviar link de acesso';
-    if (error) { msg.className = 'err'; msg.textContent = 'Não deu para enviar: ' + error.message; }
-    else { msg.className = 'ok'; msg.textContent = 'Link enviado! Confira seu e-mail (e a caixa de spam).'; }
+    btn.disabled = false; btn.textContent = 'Enviar código de acesso';
+    if (error) { msg.className = 'err'; msg.textContent = 'Não deu para enviar: ' + error.message; return; }
+    renderCodeStep(val);
   };
   btn.onclick = send;
   email.addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+}
+
+function renderCodeStep(loginEmail) {
+  renderGate(`
+    <h2>${esc(state.group.name)}</h2>
+    <p>Enviamos um código para <b>${esc(loginEmail)}</b>. Digite os <b>6 dígitos</b> abaixo (ou clique no link do e-mail).</p>
+    <input id="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6"
+           placeholder="000000" style="letter-spacing:8px;text-align:center;font-size:22px;font-weight:800;">
+    <button id="verify" class="btn-primary">Entrar</button>
+    <div id="loginMsg"></div>
+    <button id="backToEmail" style="margin-top:8px;background:none;border:none;color:var(--green);font-weight:700;font-size:13px;cursor:pointer;">Reenviar / usar outro e-mail</button>
+  `);
+  const code = document.getElementById('code');
+  const btn = document.getElementById('verify');
+  const msg = document.getElementById('loginMsg');
+  code.focus();
+  const verify = async () => {
+    const token = code.value.trim();
+    msg.className = ''; msg.textContent = '';
+    if (!/^\d{6}$/.test(token)) { msg.className = 'err'; msg.textContent = 'Digite os 6 dígitos do código.'; return; }
+    btn.disabled = true; btn.textContent = 'Verificando…';
+    const { error } = await sb.auth.verifyOtp({ email: loginEmail, token, type: 'email' });
+    btn.disabled = false; btn.textContent = 'Entrar';
+    // sucesso: onAuthStateChange dispara afterLogin
+    if (error) { msg.className = 'err'; msg.textContent = 'Código inválido ou expirado. Reenvie e tente de novo.'; }
+  };
+  btn.onclick = verify;
+  code.addEventListener('keydown', e => { if (e.key === 'Enter') verify(); });
+  document.getElementById('backToEmail').onclick = () => renderLogin(loginEmail);
 }
 
 async function afterLogin(session) {

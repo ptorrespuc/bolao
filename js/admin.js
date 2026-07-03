@@ -67,11 +67,31 @@ $('sendLink').onclick = async () => {
   if (!email.includes('@')) { msg.className = 'err'; msg.textContent = 'Informe um e-mail válido.'; return; }
   $('sendLink').disabled = true; $('sendLink').textContent = 'Enviando…';
   const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectUrl() } });
-  $('sendLink').disabled = false; $('sendLink').textContent = 'Enviar link de acesso';
-  if (error) { msg.className = 'err'; msg.textContent = error.message; }
-  else { msg.className = 'ok'; msg.textContent = 'Link enviado! Confira seu e-mail.'; }
+  $('sendLink').disabled = false; $('sendLink').textContent = 'Enviar código de acesso';
+  if (error) { msg.className = 'err'; msg.textContent = error.message; return; }
+  // vai para o passo do código
+  $('codeEmail').textContent = email;
+  hide($('emailStep')); show($('codeStep'));
+  $('code').focus();
 };
 $('email').addEventListener('keydown', e => { if (e.key === 'Enter') $('sendLink').click(); });
+
+$('verifyCode').onclick = async () => {
+  const token = $('code').value.trim();
+  const email = $('codeEmail').textContent;
+  const msg = $('loginMsg'); msg.className = ''; msg.textContent = '';
+  if (!/^\d{6}$/.test(token)) { msg.className = 'err'; msg.textContent = 'Digite os 6 dígitos do código.'; return; }
+  $('verifyCode').disabled = true; $('verifyCode').textContent = 'Verificando…';
+  const { error } = await sb.auth.verifyOtp({ email, token, type: 'email' });
+  $('verifyCode').disabled = false; $('verifyCode').textContent = 'Entrar';
+  // sucesso: onAuthStateChange dispara checkAdmin
+  if (error) { msg.className = 'err'; msg.textContent = 'Código inválido ou expirado. Reenvie e tente de novo.'; }
+};
+$('code').addEventListener('keydown', e => { if (e.key === 'Enter') $('verifyCode').click(); });
+$('backToEmail').onclick = () => {
+  $('loginMsg').className = ''; $('loginMsg').textContent = '';
+  hide($('codeStep')); show($('emailStep')); $('email').focus();
+};
 $('logout').onclick = async () => { await sb.auth.signOut(); location.reload(); };
 $('denyLogout').onclick = async () => { await sb.auth.signOut(); location.reload(); };
 
