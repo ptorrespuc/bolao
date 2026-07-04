@@ -50,6 +50,8 @@ function isLocked(game) { return new Date(game.kickoff).getTime() <= Date.now();
 // próximo link com um #error/#access_token antigo que ficou na barra de endereço.
 function redirectUrl() { return location.origin + location.pathname + location.search; }
 function gameReady(g) { return !!(g.team_a && g.team_b); }  // os dois times definidos
+// jogo "ao vivo": já começou, ainda sem resultado, com os dois times definidos
+function liveGames() { return state.games.filter(g => gameReady(g) && isLocked(g) && !g.played); }
 
 const WD = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 function kickoffLabel(iso) {
@@ -231,6 +233,8 @@ function myBet(gameId) {
 let lastNavKey = null;  // sobe ao topo só quando muda de aba/fase/pessoa
 function render() {
   root.className = 'wrap';
+  const live = liveGames();
+  if (!live.length && state.view === 'live') state.view = 'ranking';
   root.innerHTML = `
     <header>
       <div class="nav-in">
@@ -242,6 +246,7 @@ function render() {
           </div>
         </div>
         <div class="tabs">
+          ${live.length ? `<button class="tab ${state.view === 'live' ? 'active' : ''}" data-view="live">🔴 Ao vivo</button>` : ''}
           <button class="tab ${state.view === 'ranking' ? 'active' : ''}" data-view="ranking">Ranking</button>
           <button class="tab ${state.view === 'detail' && state.selectedPartId === state.participant.id ? 'active' : ''}" data-view="me">Meus jogos</button>
           <button class="tab ${state.view === 'bet' ? 'active' : ''}" data-view="bet">Apostar</button>
@@ -251,15 +256,17 @@ function render() {
     <main id="main"></main>`;
 
   document.getElementById('logout').onclick = async () => { await sb.auth.signOut(); location.reload(); };
-  root.querySelectorAll('[data-view]').forEach(b => b.onclick = () => {
+  root.querySelectorAll('[data-view]').forEach(b => b.onclick = async () => {
     const v = b.dataset.view;
     if (v === 'me') { state.view = 'detail'; state.selectedPartId = state.participant.id; }
     else { state.view = v; }
+    if (v === 'live') await loadAll();  // recarrega para pegar palpites liberados no início do jogo
     render();
   });
 
   const main = document.getElementById('main');
   if (state.view === 'ranking') renderRanking(main);
+  else if (state.view === 'live') renderLive(main);
   else if (state.view === 'detail') renderDetail(main);
   else if (state.view === 'bet') renderBet(main);
   // só rola pro topo quando navega (troca aba/fase/pessoa), não a cada +/-
@@ -336,6 +343,49 @@ function renderRanking(main) {
   main.querySelectorAll('[data-part]').forEach(el => el.onclick = () => {
     state.view = 'detail'; state.selectedPartId = el.dataset.part; render();
   });
+}
+
+// ============================================================
+// AO VIVO — palpites de todos nos jogos em andamento
+// ============================================================
+function renderLive(main) {
+  const games = liveGames();
+  if (!games.length) { state.view = 'ranking'; return render(); }
+  const parts = state.ranking.slice().sort((a, b) => a.display_name.localeCompare(b.display_name));
+
+  const cards = games.map(g => {
+    const nBets = parts.filter(p => (state.betsByPart[p.participant_id] || {})[g.id]).length;
+    const rows = parts.map(p => {
+      const bet = (state.betsByPart[p.participant_id] || {})[g.id];
+      const you = p.participant_id === state.participant.id;
+      const palpite = bet
+        ? `${bet.score_a} - ${bet.score_b}${bet.score_a === bet.score_b ? ` <span style="font-size:12px;color:var(--muted);font-weight:700;">· ${esc(teamName(bet.advances))}</span>` : ''}`
+        : `<span style="font-size:13px;color:var(--muted);font-weight:600;">não apostou</span>`;
+      return `<div style="display:flex;align-items:center;gap:10px;padding:11px 16px;border-top:1px solid #F1EBD6;background:${you ? '#FBF4DF' : 'transparent'};">
+        <div style="width:32px;height:32px;border-radius:50%;flex-shrink:0;background:${avatarColor(p.participant_id)};color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Archivo';font-weight:800;font-size:12px;">${esc(initials(p.display_name))}</div>
+        <div style="flex:1;min-width:0;font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(p.display_name)}${you ? ' <span style="font-size:11px;color:var(--green);font-weight:700;">(você)</span>' : ''}</div>
+        <div class="arch" style="font-weight:900;font-size:16px;color:var(--green);white-space:nowrap;">${palpite}</div>
+      </div>`;
+    }).join('');
+
+    return `<div class="card" style="overflow:hidden;">
+      <div style="padding:14px 16px;display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-size:12px;font-weight:700;color:var(--muted);">${kickoffLabel(g.kickoff)}</div>
+          <div class="badge" style="background:#FCE3E0;color:#C0392B;display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:#C0392B;display:inline-block;"></span>AO VIVO</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="flex:1;font-weight:800;font-size:16px;">${esc(teamLabel(g.team_a))}</div>
+          <div class="arch" style="font-weight:900;font-size:15px;background:var(--field);border-radius:8px;padding:4px 12px;">×</div>
+          <div style="flex:1;font-weight:800;font-size:16px;text-align:right;">${esc(teamLabel(g.team_b))}</div>
+        </div>
+        <div style="font-size:12px;color:var(--muted);font-weight:600;">${nBets} de ${parts.length} palpitaram</div>
+      </div>
+      ${rows}
+    </div>`;
+  }).join('');
+
+  main.innerHTML = `<div style="display:flex;flex-direction:column;gap:18px;">${cards}</div>`;
 }
 
 // ============================================================
