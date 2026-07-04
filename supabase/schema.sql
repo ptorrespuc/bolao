@@ -90,7 +90,7 @@ create trigger trg_bets_updated before update on bets
   for each row execute function set_updated_at();
 
 -- Ao lançar o placar, calcula vencedor e marca "played".
--- Empate: mantém o winner informado pelo admin (quem venceu nos pênaltis).
+-- Empate: mantém o winner informado pelo admin (quem passou na prorrogação).
 create or replace function games_set_result()
 returns trigger language plpgsql as $$
 begin
@@ -104,7 +104,7 @@ begin
       new.winner  = new.team_b;
       new.decided = coalesce(new.decided, 'regular');
     else
-      new.decided = 'penalties';   -- empate no tempo normal → foi p/ pênaltis
+      new.decided = 'penalties';   -- flag interna: empate no tempo normal → foi p/ prorrogação
       -- new.winner deve ser informado pelo admin (quem passou)
     end if;
   else
@@ -121,7 +121,7 @@ create trigger trg_games_result before insert or update on games
 -- ============================================================
 -- PONTUAÇÃO (fonte única — igual ao protótipo)
 --  placar exato = 10 · acertou o vencedor = 7
---  previu empate e foi p/ pênaltis = 5 · senão 0
+--  previu empate (jogo foi à prorrogação) = 5 · senão 0
 -- ============================================================
 create or replace function bet_points(
   b_score_a int, b_score_b int, b_advances text,

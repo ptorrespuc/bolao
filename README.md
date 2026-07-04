@@ -8,7 +8,7 @@ App de bolão (palpites de jogos + ranking) com **vários grupos independentes**
 - **Sem auto-cadastro:** você cadastra cada jogador (nome + e-mail) no admin; só quem está na lista do grupo entra, usando esse mesmo e-mail.
 - **Jogos e resultados são globais** (uma só Copa): você cadastra e lança o placar uma vez, e o ranking de todos os grupos atualiza sozinho.
 - **Trava por jogo:** dá pra apostar/alterar até o horário de início da partida; depois o banco recusa qualquer mudança.
-- **Pontuação:** placar exato = 10 · acertou o vencedor/quem avança = 7 · previu empate e foi aos pênaltis = 5 · senão 0.
+- **Pontuação:** placar exato (tempo normal) = 10 · acertou o vencedor/quem avança = 7 · previu empate e o jogo foi à prorrogação = 5 · senão 0. O placar lançado é sempre o do tempo regulamentar; nos jogos que vão à prorrogação, registra-se o empate do tempo normal + quem passou.
 
 ## Estrutura
 ```

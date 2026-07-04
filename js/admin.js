@@ -167,13 +167,13 @@ function gameCardHTML(g) {
       <div><label>Time B</label><select data-f="team_b">${teamOptions(g.team_b)}</select></div>
     </div>
     <div style="border-top:1px solid var(--line);margin:12px 0;"></div>
-    <label>Resultado (deixe em branco enquanto não houver placar)</label>
+    <label>Resultado — placar do tempo normal (deixe em branco enquanto não houver)</label>
     <div class="row">
       <input data-f="score_a" type="number" min="0" style="width:70px;" value="${g.score_a ?? ''}" placeholder="A">
       <span style="font-weight:800;">×</span>
       <input data-f="score_b" type="number" min="0" style="width:70px;" value="${g.score_b ?? ''}" placeholder="B">
       <div data-tie style="${tie ? '' : 'display:none;'};flex:1;min-width:180px;">
-        <select data-f="winner"><option value="">Quem venceu (pênaltis)?</option>
+        <select data-f="winner"><option value="">Quem passou? (prorrogação)</option>
           ${g.team_a ? `<option value="${g.team_a}" ${g.winner === g.team_a ? 'selected' : ''}>${esc(teamName(g.team_a))}</option>` : ''}
           ${g.team_b ? `<option value="${g.team_b}" ${g.winner === g.team_b ? 'selected' : ''}>${esc(teamName(g.team_b))}</option>` : ''}
         </select>
@@ -232,9 +232,9 @@ async function saveGame(gid) {
   const g = GAMES.find(x => x.id === gid);
   const form = readGameForm(gid);
   if (!form.kickoff) return toast('Informe a data/hora de início.');
-  // empate com placar: exige vencedor (pênaltis)
+  // empate no tempo normal: exige quem passou (prorrogação)
   if (form.score_a != null && form.score_b != null && form.score_a === form.score_b && !form.winner) {
-    return toast('Empate no placar: escolha quem venceu nos pênaltis.');
+    return toast('Empate no tempo normal: informe quem passou (prorrogação).');
   }
   // sort segue a fase se ela mudou? mantém o sort atual
   const patch = { ...form, sort: g.sort };

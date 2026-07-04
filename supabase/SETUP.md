@@ -62,10 +62,12 @@ Siga na ordem. Leva ~10 minutos.
 
 ## Como funciona a pontuação
 Calculada no banco (view `v_ranking`), igual para todos:
-- **Placar exato:** 10 pontos
+- **Placar exato** (do tempo normal): 10 pontos
 - **Acertou só o vencedor** (ou quem avançou): 7 pontos
-- **Previu empate e o jogo foi para os pênaltis** (mas errou quem passou): 5 pontos
+- **Previu empate e o jogo foi à prorrogação** (mas errou quem passou): 5 pontos
 - Errou tudo: 0
+
+> **Como lançar:** informe sempre o **placar do tempo regulamentar**. Se o jogo foi à prorrogação (mesmo com gols nela), registre o **empate do tempo normal** e marque **quem passou**.
 
 ## A trava do horário
 Cada jogo tem um horário de início. O apostador pode criar/alterar o palpite até esse horário; depois, o **próprio banco recusa** qualquer alteração (política de RLS que checa `kickoff > now()`). Não adianta mudar o relógio do computador.

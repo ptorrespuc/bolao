@@ -87,9 +87,9 @@ const POINT_COLORS = { 10: ['#F4B942', '#4A3A0A'], 7: ['#2E7D46', '#fff'], 5: ['
 // modal com as regras de pontuação (acessível de qualquer aba)
 function openRules() {
   const rows = [
-    [10, 'Placar exato', 'Você acertou o resultado certinho (ex.: apostou 2-1 e terminou 2-1).'],
+    [10, 'Placar exato', 'Acertou o placar do tempo normal (ex.: apostou 2-1 e terminou 2-1).'],
     [7,  'Acertou quem venceu / avançou', 'Errou o placar, mas acertou o vencedor — ou quem passou de fase, no mata-mata.'],
-    [5,  'Empate que foi aos pênaltis', 'Você previu empate e o jogo foi para os pênaltis (mesmo errando quem passou).'],
+    [5,  'Empate que foi à prorrogação', 'Você previu empate e o jogo empatou no tempo normal (foi para a prorrogação), mesmo errando quem passou.'],
     [0,  'Não acertou', 'Nenhuma das condições acima.'],
   ];
   const items = rows.map(([pts, titulo, desc]) => {
@@ -108,10 +108,10 @@ function openRules() {
       <h2 style="font-family:'Archivo';font-weight:900;font-size:20px;margin:0;color:var(--green);">Como pontua</h2>
       <button id="rulesClose" aria-label="Fechar" style="background:none;border:none;font-size:24px;line-height:1;color:var(--muted);cursor:pointer;padding:2px 6px;">×</button>
     </div>
-    <p style="margin:0;font-size:13px;color:var(--muted);line-height:1.5;">Cada jogo vale os pontos da melhor condição que você acertar. O <b>ranking soma todas as fases</b>.</p>
+    <p style="margin:0;font-size:13px;color:var(--muted);line-height:1.5;">Cada jogo vale os pontos da melhor condição que você acertar, sempre pelo <b>placar do tempo normal</b> (90 min). O <b>ranking soma todas as fases</b>.</p>
     <div style="display:flex;flex-direction:column;gap:14px;">${items}</div>
     <div style="background:var(--field);border-radius:12px;padding:12px 14px;font-size:12.5px;color:var(--muted);line-height:1.5;">
-      <b style="color:var(--text);">No empate:</b> escolha quem avança — é essa escolha que vale os 7 pontos se você acertar quem passou.</div>
+      <b style="color:var(--text);">No empate:</b> escolha quem avança — é essa escolha que vale os 7 pontos se você acertar quem passou na prorrogação.</div>
   </div>`;
 
   const close = () => { bg.remove(); document.removeEventListener('keydown', onKey); };
@@ -506,7 +506,7 @@ function renderDetail(main) {
   // legenda dos selos de pontos (com atalho para as regras completas)
   const legend = `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;">
     <span style="font-size:11px;font-weight:700;color:var(--muted);">Pontos:</span>
-    ${[[10, 'placar exato'], [7, 'vencedor'], [5, 'empate/pênaltis'], [0, 'errou']].map(([p, t]) => {
+    ${[[10, 'placar exato'], [7, 'vencedor'], [5, 'empate (prorrog.)'], [0, 'errou']].map(([p, t]) => {
       const [bg, fg] = badgeColors[p];
       return `<span style="display:inline-flex;align-items:center;gap:5px;background:${bg};color:${fg};border-radius:20px;padding:3px 9px;font-size:11px;font-weight:700;"><b class="arch">${p}</b> ${t}</span>`;
     }).join('')}
