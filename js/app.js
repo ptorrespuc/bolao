@@ -81,6 +81,47 @@ function toast(msg) {
   setTimeout(() => t.remove(), 2600);
 }
 
+// cores dos selos de pontos (mesma paleta do detalhe)
+const POINT_COLORS = { 10: ['#F4B942', '#4A3A0A'], 7: ['#2E7D46', '#fff'], 5: ['#D98C2B', '#fff'], 0: ['#E4DEC7', '#8A8365'] };
+
+// modal com as regras de pontuação (acessível de qualquer aba)
+function openRules() {
+  const rows = [
+    [10, 'Placar exato', 'Você acertou o resultado certinho (ex.: apostou 2-1 e terminou 2-1).'],
+    [7,  'Acertou quem venceu / avançou', 'Errou o placar, mas acertou o vencedor — ou quem passou de fase, no mata-mata.'],
+    [5,  'Empate que foi aos pênaltis', 'Você previu empate e o jogo foi para os pênaltis (mesmo errando quem passou).'],
+    [0,  'Não acertou', 'Nenhuma das condições acima.'],
+  ];
+  const items = rows.map(([pts, titulo, desc]) => {
+    const [bg, fg] = POINT_COLORS[pts];
+    return `<div style="display:flex;gap:12px;align-items:flex-start;">
+      <div class="arch" style="flex-shrink:0;width:44px;height:36px;border-radius:9px;background:${bg};color:${fg};display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;">${pts}</div>
+      <div style="flex:1;"><div style="font-weight:800;font-size:14px;">${titulo}</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.45;">${desc}</div></div>
+    </div>`;
+  }).join('');
+
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.innerHTML = `<div class="modal-card" role="dialog" aria-modal="true">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+      <h2 style="font-family:'Archivo';font-weight:900;font-size:20px;margin:0;color:var(--green);">Como pontua</h2>
+      <button id="rulesClose" aria-label="Fechar" style="background:none;border:none;font-size:24px;line-height:1;color:var(--muted);cursor:pointer;padding:2px 6px;">×</button>
+    </div>
+    <p style="margin:0;font-size:13px;color:var(--muted);line-height:1.5;">Cada jogo vale os pontos da melhor condição que você acertar. O <b>ranking soma todas as fases</b>.</p>
+    <div style="display:flex;flex-direction:column;gap:14px;">${items}</div>
+    <div style="background:var(--field);border-radius:12px;padding:12px 14px;font-size:12.5px;color:var(--muted);line-height:1.5;">
+      <b style="color:var(--text);">No empate:</b> escolha quem avança — é essa escolha que vale os 7 pontos se você acertar quem passou.</div>
+  </div>`;
+
+  const close = () => { bg.remove(); document.removeEventListener('keydown', onKey); };
+  const onKey = e => { if (e.key === 'Escape') close(); };
+  bg.addEventListener('click', e => { if (e.target === bg) close(); });
+  document.body.appendChild(bg);
+  document.getElementById('rulesClose').onclick = close;
+  document.addEventListener('keydown', onKey);
+}
+
 // ============================================================
 // BOOT
 // ============================================================
@@ -241,6 +282,7 @@ function render() {
         <div class="nav-top">
           <div class="logo"><span class="b1">Bolão</span><span class="b2">da Copa</span></div>
           <div class="nav-meta">
+            <button class="rules" id="rulesBtn" title="Regras de pontuação">ⓘ Regras</button>
             <span>${state.ranking.length} participante${state.ranking.length === 1 ? '' : 's'}</span>
             <button class="logout" id="logout">sair</button>
           </div>
@@ -256,6 +298,7 @@ function render() {
     <main id="main"></main>`;
 
   document.getElementById('logout').onclick = async () => { await sb.auth.signOut(); location.reload(); };
+  document.getElementById('rulesBtn').onclick = openRules;
   root.querySelectorAll('[data-view]').forEach(b => b.onclick = async () => {
     const v = b.dataset.view;
     if (v === 'me') { state.view = 'detail'; state.selectedPartId = state.participant.id; }
@@ -460,7 +503,19 @@ function renderDetail(main) {
       <div class="arch" style="font-weight:800;font-size:15px;color:var(--green);padding-left:2px;">${PHASE_LABELS[ph]}</div>${body}</div>`;
   }).join('');
 
-  main.innerHTML = header + phasesHTML;
+  // legenda dos selos de pontos (com atalho para as regras completas)
+  const legend = `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;">
+    <span style="font-size:11px;font-weight:700;color:var(--muted);">Pontos:</span>
+    ${[[10, 'placar exato'], [7, 'vencedor'], [5, 'empate/pênaltis'], [0, 'errou']].map(([p, t]) => {
+      const [bg, fg] = badgeColors[p];
+      return `<span style="display:inline-flex;align-items:center;gap:5px;background:${bg};color:${fg};border-radius:20px;padding:3px 9px;font-size:11px;font-weight:700;"><b class="arch">${p}</b> ${t}</span>`;
+    }).join('')}
+    <button id="legendRules" style="background:none;border:none;color:var(--green);font-weight:700;font-size:11px;text-decoration:underline;cursor:pointer;padding:0;">ver regras</button>
+  </div>`;
+
+  main.innerHTML = header + legend + phasesHTML;
+  const lr = document.getElementById('legendRules');
+  if (lr) lr.onclick = openRules;
   document.getElementById('back').onclick = () => { state.view = 'ranking'; render(); };
 }
 
