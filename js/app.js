@@ -28,6 +28,7 @@ const state = {
   view: 'ranking',
   selectedPartId: null,    // detail
   betPhase: 'quartas',
+  detailPhase: 'oitavas',  // aba de fase em "Meus jogos"
   edit: {},                // game_id -> { score_a, score_b, advances, dirty, saving }
 };
 
@@ -261,6 +262,8 @@ async function loadAll() {
   const openPhase = PHASE_ORDER.find(ph =>
     state.games.some(g => g.phase === ph && gameReady(g) && !isLocked(g)));
   if (openPhase) state.betPhase = openPhase;
+  // "Meus jogos" abre na fase corrente
+  state.detailPhase = currentPhase();
 }
 
 function myBet(gameId) {
@@ -301,7 +304,7 @@ function render() {
   document.getElementById('rulesBtn').onclick = openRules;
   root.querySelectorAll('[data-view]').forEach(b => b.onclick = async () => {
     const v = b.dataset.view;
-    if (v === 'me') { state.view = 'detail'; state.selectedPartId = state.participant.id; }
+    if (v === 'me') { state.view = 'detail'; state.selectedPartId = state.participant.id; state.detailPhase = currentPhase(); }
     else { state.view = v; }
     if (v === 'live') await loadAll();  // recarrega para pegar palpites liberados no início do jogo
     render();
@@ -313,7 +316,7 @@ function render() {
   else if (state.view === 'detail') renderDetail(main);
   else if (state.view === 'bet') renderBet(main);
   // só rola pro topo quando navega (troca aba/fase/pessoa), não a cada +/-
-  const navKey = state.view + '|' + state.selectedPartId + '|' + state.betPhase;
+  const navKey = state.view + '|' + state.selectedPartId + '|' + state.betPhase + '|' + state.detailPhase;
   if (navKey !== lastNavKey) { window.scrollTo(0, 0); lastNavKey = navKey; }
 }
 
@@ -338,6 +341,13 @@ function withRank(list) {
     if (p.points !== prev) { rank = i + 1; prev = p.points; }
     return { ...p, rank };
   });
+}
+
+// fase "corrente": primeira fase com jogo pronto ainda não encerrado; senão a última com jogos
+function currentPhase() {
+  const ready = PHASE_ORDER.filter(ph => state.games.some(g => g.phase === ph && gameReady(g)));
+  const inPlay = ready.find(ph => state.games.some(g => g.phase === ph && gameReady(g) && !g.played));
+  return inPlay || ready[ready.length - 1] || 'oitavas';
 }
 
 // ============================================================
@@ -384,7 +394,7 @@ function renderRanking(main) {
     (rest ? `<div class="card" style="overflow:hidden;">${rest}</div>` : '');
 
   main.querySelectorAll('[data-part]').forEach(el => el.onclick = () => {
-    state.view = 'detail'; state.selectedPartId = el.dataset.part; render();
+    state.view = 'detail'; state.selectedPartId = el.dataset.part; state.detailPhase = currentPhase(); render();
   });
 }
 
@@ -459,49 +469,57 @@ function renderDetail(main) {
   const bets = state.betsByPart[p.participant_id] || {};
   const badgeColors = { 10: ['#F4B942', '#4A3A0A'], 7: ['#2E7D46', '#fff'], 5: ['#D98C2B', '#fff'], 0: ['#E4DEC7', '#8A8365'] };
 
-  const phasesHTML = PHASE_ORDER.map(ph => {
-    const anyInPhase = state.games.some(g => g.phase === ph);
-    if (!anyInPhase) return '';
+  // corpo de uma fase (cards dos jogos) ou aviso quando a chave ainda não foi definida
+  function phaseBodyHTML(ph) {
     const games = state.games.filter(g => g.phase === ph && gameReady(g));
-    const undefinedPhase = games.length === 0;
-    let body;
-    if (undefinedPhase) {
-      body = `<div style="background:var(--soft);border:1px dashed var(--line2);border-radius:14px;padding:16px;font-size:13px;font-weight:600;color:#9A9179;text-align:center;">Chave ainda não definida</div>`;
-    } else {
-      body = games.map(g => {
-        const bet = bets[g.id];
-        const pts = computePoints(g, bet);
-        const locked = isLocked(g);
-        let right, sub;
-        // no empate, mostra quem o apostador escolheu para avançar
-        const advSuffix = bet && bet.score_a === bet.score_b ? ` (avança ${esc(teamName(bet.advances))})` : '';
-        if (g.played) {
-          const [bg, fg] = badgeColors[pts != null ? pts : 0];
-          right = `<div class="badge" style="background:${bg};color:${fg};">${pts != null ? '+' + pts + ' pts' : '—'}</div>`;
-          sub = bet ? `Palpite: ${bet.score_a}-${bet.score_b}${advSuffix}` : 'Não apostou';
-        } else {
-          const placed = !!bet;
-          right = `<div class="badge" style="background:${placed ? '#DCEFE1' : '#F3E3D0'};color:${placed ? 'var(--green)' : '#A0662E'};">${placed ? (locked ? 'Aguardando' : 'Palpite feito') : 'Pendente'}</div>`;
-          // só mostra o palpite do próprio usuário enquanto o jogo não começou
-          sub = placed ? ((isMe || locked) ? `Palpite: ${bet.score_a}-${bet.score_b}${advSuffix}` : 'Palpite registrado') : 'Sem palpite';
-        }
-        const res = g.played ? `${g.score_a} - ${g.score_b}` : 'vs';
-        return `<div class="card" style="padding:14px 16px;display:flex;flex-direction:column;gap:8px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <div style="font-size:12px;font-weight:700;color:var(--muted);">${kickoffLabel(g.kickoff)}</div>${right}
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <div style="flex:1;font-weight:700;font-size:14px;">${esc(teamLabel(g.team_a))}</div>
-            <div class="arch" style="font-weight:900;font-size:16px;background:var(--field);border-radius:8px;padding:4px 10px;min-width:52px;text-align:center;">${res}</div>
-            <div style="flex:1;font-weight:700;font-size:14px;text-align:right;">${esc(teamLabel(g.team_b))}</div>
-          </div>
-          <div style="font-size:12px;color:var(--muted);font-weight:600;">${sub}</div>
-        </div>`;
-      }).join('');
+    if (!games.length) {
+      return `<div style="background:var(--soft);border:1px dashed var(--line2);border-radius:14px;padding:18px;font-size:13px;font-weight:600;color:#9A9179;text-align:center;">Chave ainda não definida — sem jogos nesta fase por enquanto.</div>`;
     }
-    return `<div style="display:flex;flex-direction:column;gap:10px;">
-      <div class="arch" style="font-weight:800;font-size:15px;color:var(--green);padding-left:2px;">${PHASE_LABELS[ph]}</div>${body}</div>`;
-  }).join('');
+    return games.map(g => {
+      const bet = bets[g.id];
+      const pts = computePoints(g, bet);
+      const locked = isLocked(g);
+      let right, sub;
+      // no empate, mostra quem o apostador escolheu para avançar
+      const advSuffix = bet && bet.score_a === bet.score_b ? ` (avança ${esc(teamName(bet.advances))})` : '';
+      if (g.played) {
+        const [bg, fg] = badgeColors[pts != null ? pts : 0];
+        right = `<div class="badge" style="background:${bg};color:${fg};">${pts != null ? '+' + pts + ' pts' : '—'}</div>`;
+        sub = bet ? `Palpite: ${bet.score_a}-${bet.score_b}${advSuffix}` : 'Não apostou';
+      } else {
+        const placed = !!bet;
+        right = `<div class="badge" style="background:${placed ? '#DCEFE1' : '#F3E3D0'};color:${placed ? 'var(--green)' : '#A0662E'};">${placed ? (locked ? 'Aguardando' : 'Palpite feito') : 'Pendente'}</div>`;
+        // só mostra o palpite do próprio usuário enquanto o jogo não começou
+        sub = placed ? ((isMe || locked) ? `Palpite: ${bet.score_a}-${bet.score_b}${advSuffix}` : 'Palpite registrado') : 'Sem palpite';
+      }
+      const res = g.played ? `${g.score_a} - ${g.score_b}` : 'vs';
+      return `<div class="card" style="padding:14px 16px;display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-size:12px;font-weight:700;color:var(--muted);">${kickoffLabel(g.kickoff)}</div>${right}
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="flex:1;font-weight:700;font-size:14px;">${esc(teamLabel(g.team_a))}</div>
+          <div class="arch" style="font-weight:900;font-size:16px;background:var(--field);border-radius:8px;padding:4px 10px;min-width:52px;text-align:center;">${res}</div>
+          <div style="flex:1;font-weight:700;font-size:14px;text-align:right;">${esc(teamLabel(g.team_b))}</div>
+        </div>
+        <div style="font-size:12px;color:var(--muted);font-weight:600;">${sub}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // abas de fase (só as fases que têm jogos cadastrados); default = fase corrente
+  const phasesWithGames = PHASE_ORDER.filter(ph => state.games.some(g => g.phase === ph));
+  if (!phasesWithGames.includes(state.detailPhase)) {
+    state.detailPhase = phasesWithGames.includes(currentPhase()) ? currentPhase() : (phasesWithGames[0] || 'oitavas');
+  }
+  const detailTabs = `<div style="display:flex;gap:8px;flex-wrap:wrap;">` + phasesWithGames.map(ph => {
+    const ready = state.games.some(g => g.phase === ph && gameReady(g));
+    const active = state.detailPhase === ph;
+    return `<button class="chip" data-dphase="${ph}" style="background:${active ? 'var(--gold)' : 'rgba(14,74,48,.12)'};color:${active ? 'var(--green2)' : 'var(--green)'};cursor:pointer;">
+      <span>${PHASE_LABELS[ph]}</span>${ready ? '' : lockSvg('currentColor')}</button>`;
+  }).join('') + `</div>`;
+
+  const phaseBody = `<div style="display:flex;flex-direction:column;gap:10px;">${phaseBodyHTML(state.detailPhase)}</div>`;
 
   // legenda dos selos de pontos (com atalho para as regras completas)
   const legend = `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;">
@@ -513,7 +531,8 @@ function renderDetail(main) {
     <button id="legendRules" style="background:none;border:none;color:var(--green);font-weight:700;font-size:11px;text-decoration:underline;cursor:pointer;padding:0;">ver regras</button>
   </div>`;
 
-  main.innerHTML = header + legend + phasesHTML;
+  main.innerHTML = header + detailTabs + legend + phaseBody;
+  main.querySelectorAll('[data-dphase]').forEach(b => b.onclick = () => { state.detailPhase = b.dataset.dphase; render(); });
   const lr = document.getElementById('legendRules');
   if (lr) lr.onclick = openRules;
   document.getElementById('back').onclick = () => { state.view = 'ranking'; render(); };
