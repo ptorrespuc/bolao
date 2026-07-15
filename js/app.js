@@ -11,8 +11,8 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
 const root = document.getElementById('root');
 
 // ---------- constantes de visual ----------
-const PHASE_ORDER  = ['oitavas', 'quartas', 'semi', 'final'];
-const PHASE_LABELS = { oitavas: 'Oitavas', quartas: 'Quartas', semi: 'Semifinal', final: 'Final' };
+const PHASE_ORDER  = ['oitavas', 'quartas', 'semi', 'terceiro', 'final'];
+const PHASE_LABELS = { oitavas: 'Oitavas', quartas: 'Quartas', semi: 'Semifinal', terceiro: '3º lugar', final: 'Final' };
 const AVATAR_PALETTE = ['#0E4A30', '#F2542D', '#2E6E7E', '#B8842E', '#5C4A9C', '#1E7A4C'];
 
 // ---------- estado ----------

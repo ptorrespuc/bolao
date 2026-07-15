@@ -11,8 +11,8 @@ const show = (el) => el.classList.remove('hidden');
 const hide = (el) => el.classList.add('hidden');
 const esc = (s) => (s == null ? '' : String(s)).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-const PHASES = ['oitavas', 'quartas', 'semi', 'final'];
-const PHASE_LABELS = { oitavas: 'Oitavas', quartas: 'Quartas', semi: 'Semifinal', final: 'Final' };
+const PHASES = ['oitavas', 'quartas', 'semi', 'terceiro', 'final'];
+const PHASE_LABELS = { oitavas: 'Oitavas', quartas: 'Quartas', semi: 'Semifinal', terceiro: '3º lugar', final: 'Final' };
 
 let TEAMS = [];
 let GAMES = [];
